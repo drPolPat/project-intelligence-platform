@@ -1,0 +1,185 @@
+{
+  "_comment": "Hand-verified reference set for the GFPA RAG eval harness. Every expected_answer and expected_citations entry was checked directly against knowledge_base/standards/*.md (see notes for cross-checks). expected_citations lists document_id + section_id in relevance order (primary first). expected_refusal is null for questions that should be answered, or one of: referenced_but_missing, low_similarity.",
+  "questions": [
+    {
+      "id": "Q01",
+      "category": "in_corpus_standard_vocab",
+      "question": "What surveillance coverage percentage must a Class A facility maintain?",
+      "expected_refusal": null,
+      "expected_citations": ["GFPA-201 Section 3.1"],
+      "expected_answer": "No less than 70% of publicly accessible floor area, including all designated entry and exit points.",
+      "notes": "Baseline case, standard's own vocabulary (Class A), single citation."
+    },
+    {
+      "id": "Q02",
+      "category": "in_corpus_standard_vocab",
+      "question": "What is the minimum staffing ratio for a Class B facility?",
+      "expected_refusal": null,
+      "expected_citations": ["GFPA-210 Section 2.2"],
+      "expected_answer": "At least 1 security staff member per 25,000 square feet, with a facility-wide minimum of 2 staff during standard business hours.",
+      "notes": "Standard's own vocabulary."
+    },
+    {
+      "id": "Q03",
+      "category": "in_corpus_standard_vocab",
+      "question": "Within what timeframe must a Tier 2 vulnerability be remediated?",
+      "expected_refusal": null,
+      "expected_citations": ["GFPA-215 Section 3.2"],
+      "expected_answer": "Within 30 days of identification.",
+      "notes": "Standard's own vocabulary."
+    },
+    {
+      "id": "Q04",
+      "category": "in_corpus_standard_vocab",
+      "question": "How long must incident and near-miss records be retained?",
+      "expected_refusal": null,
+      "expected_citations": ["GFPA-230 Section 5.1"],
+      "expected_answer": "A minimum of 24 months, and they must be made available for review during scheduled safety inspections and risk assessments.",
+      "notes": "Standard's own vocabulary."
+    },
+    {
+      "id": "Q05",
+      "category": "in_corpus_standard_vocab",
+      "question": "How often must a Class C facility undergo a full safety inspection?",
+      "expected_refusal": null,
+      "expected_citations": ["GFPA-240 Section 2.2"],
+      "expected_answer": "No less than once per calendar year, plus an abbreviated interim inspection at the calendar-year midpoint covering only fire/life-safety and surveillance items.",
+      "notes": "Standard's own vocabulary."
+    },
+    {
+      "id": "Q06",
+      "category": "in_corpus_plain_language",
+      "question": "What surveillance coverage is required for a museum?",
+      "expected_refusal": null,
+      "expected_citations": ["GFPA-201 Section 2", "GFPA-201 Section 3.1"],
+      "expected_answer": "A museum falls under Class A - Public Assembly (Section 2). Class A facilities must maintain video surveillance coverage of no less than 70% of publicly accessible floor area, including all designated entry and exit points (Section 3.1).",
+      "notes": "Canonical regression check for the museum->Class A retrieval fix; both chunks now retrieved in top-5 (see prior turn's live verification: GFPA-201 Section 2 at rank 1, sim=0.746)."
+    },
+    {
+      "id": "Q07",
+      "category": "in_corpus_plain_language",
+      "question": "How quickly must a critical structural vulnerability be fixed?",
+      "expected_refusal": null,
+      "expected_citations": ["GFPA-215 Section 2.1", "GFPA-215 Section 3.1"],
+      "expected_answer": "A critical vulnerability is Tier 1 (Section 2.1). Tier 1 vulnerabilities must be remediated, or placed under an interim compensating control, within 72 hours of identification (Section 3.1).",
+      "notes": "Canonical regression check for the critical->Tier 1 retrieval fix; GFPA-215 Section 2.1 now retrieved at rank 3, sim=0.775. IMPORTANT: prior to the fix, the model answered this correctly (72 hours, citing 3.1) WITHOUT Section 2.1 in context, apparently treating 'Tier 1' as an obvious match for 'critical' on its own. Worth checking post-fix whether the answer changes to explicitly cite 2.1, or stays the same - either is plausible and neither is wrong, but it's a real behavioral question to observe, not assume."
+    },
+    {
+      "id": "Q08",
+      "category": "in_corpus_plain_language",
+      "question": "What staffing is required for a shopping mall?",
+      "expected_refusal": null,
+      "expected_citations": ["GFPA-201 Section 2", "GFPA-210 Section 2.1"],
+      "expected_answer": "A shopping mall (retail center) falls under Class A - Public Assembly (GFPA-201 Section 2). Class A facilities require a minimum of 1 security staff member per 15,000 square feet of publicly accessible area during operating hours, with a facility-wide minimum of 4 staff during peak occupancy periods (GFPA-210 Section 2.1).",
+      "notes": "Tests generalization of the retrieval fix beyond 'museum' specifically - the enrichment text explicitly names 'retail mall,' but this question also requires bridging into a DIFFERENT document (GFPA-210) than the one whose classification chunk was fixed (GFPA-201), which the fix does not directly touch."
+    },
+    {
+      "id": "Q09",
+      "category": "in_corpus_plain_language",
+      "question": "How urgently must a life-threatening security incident be reported to facility leadership?",
+      "expected_refusal": null,
+      "expected_citations": ["GFPA-230 Section 2.5", "GFPA-230 Section 3.3"],
+      "expected_answer": "A life-threatening incident falls under the 'Critical' severity classification, requiring activation of emergency response procedures and a full incident review with external reporting where applicable (Section 2.5). Critical (and Major) events must be reported to facility leadership immediately upon discovery, and no later than 4 hours after the event is identified (Section 3.3).",
+      "notes": "DELIBERATELY UNTESTED CASE - GFPA-230 Section 2.5 ('Critical' severity definition) was NOT part of the embedding-enrichment fix applied to GFPA-201/GFPA-215. This question exists to check whether the same plain-language-to-label retrieval gap exists here too, not just confirm the two already-fixed cases. A miss here would NOT be a harness bug - it would be a genuine, newly-discovered instance of the same underlying pattern."
+    },
+    {
+      "id": "Q10",
+      "category": "in_corpus_plain_language",
+      "question": "What surveillance coverage does a utility substation need?",
+      "expected_refusal": null,
+      "expected_citations": ["GFPA-201 Section 2", "GFPA-201 Section 3.3"],
+      "expected_answer": "A utility substation falls under Class C - Critical Infrastructure (Section 2). Class C facilities must maintain coverage of no less than 40% of the perimeter fence line and 100% of vehicle and pedestrian access gates (Section 3.3).",
+      "notes": "Confirms the retrieval fix generalizes to the third named example type (substation), not just museum."
+    },
+    {
+      "id": "Q11",
+      "category": "in_corpus_plain_language",
+      "question": "How often does an office building need a safety inspection?",
+      "expected_refusal": null,
+      "expected_citations": ["GFPA-201 Section 2", "GFPA-240 Section 2.1"],
+      "expected_answer": "An office building falls under Class B - Commercial Occupancy (GFPA-201 Section 2). Class A and Class B facilities must undergo a full safety inspection no less than twice per calendar year (GFPA-240 Section 2.1).",
+      "notes": "Plain-language classification bridge spanning two documents (GFPA-201 + GFPA-240)."
+    },
+    {
+      "id": "Q12",
+      "category": "multi_hop",
+      "question": "If a facility has both low surveillance coverage and below-minimum staffing, does the standard say anything about the combined risk?",
+      "expected_refusal": null,
+      "expected_citations": ["GFPA-215 Section 5.1", "GFPA-210 Section 5.1"],
+      "expected_answer": "Yes. GFPA-215 Section 5.1 states that a facility with multiple concurrent unresolved vulnerabilities, particularly combined with reduced surveillance coverage (GFPA-201) or below-minimum staffing (GFPA-210), presents materially greater risk than the sum of the individual findings would suggest, and should prioritize remediation accordingly. GFPA-210 Section 5.1 separately frames staffing as a primary compensating factor against gaps in surveillance coverage and structural vulnerabilities.",
+      "notes": "Multi-hop across GFPA-215 and GFPA-210. This directly exercises the cross-references built into the corpus for the compounding-risk narrative that also drove the ML model card's Critical-tier finding."
+    },
+    {
+      "id": "Q13",
+      "category": "multi_hop",
+      "question": "If an incident is later found to involve a Tier 1 structural vulnerability, what happens to its classification, and how quickly must the vulnerability itself be fixed?",
+      "expected_refusal": null,
+      "expected_citations": ["GFPA-230 Section 4.1", "GFPA-215 Section 3.1"],
+      "expected_answer": "The incident must be re-classified upward by at least one severity level (GFPA-230 Section 4.1). Separately, the Tier 1 vulnerability itself must be remediated, or placed under an interim compensating control, within 72 hours of identification (GFPA-215 Section 3.1).",
+      "notes": "Multi-hop across GFPA-230 (escalation) and GFPA-215 (remediation timeline) - genuinely requires both documents to fully answer."
+    },
+    {
+      "id": "Q14",
+      "category": "multi_hop",
+      "question": "What must an inspector check regarding structural vulnerabilities during a scheduled inspection, and what is the maximum time allowed to fix the most severe kind of finding?",
+      "expected_refusal": null,
+      "expected_citations": ["GFPA-240 Section 3.1", "GFPA-240 Section 3.2", "GFPA-215 Section 3.1"],
+      "expected_answer": "Inspections must assess structural condition, cross-referenced against open items under GFPA-215 (Section 3.1), and any deficiencies found must be logged with a pass/fail determination and cross-referenced to the relevant structural vulnerability tier (Section 3.2). The most severe finding, Tier 1 (Critical), must be remediated within 72 hours of identification (GFPA-215 Section 3.1).",
+      "notes": "Multi-hop across GFPA-240 (inspection checklist) and GFPA-215 (remediation timeline)."
+    },
+    {
+      "id": "Q15",
+      "category": "referenced_but_missing",
+      "question": "According to GFPA-001, what facilities are covered by the classification scheme?",
+      "expected_refusal": "referenced_but_missing",
+      "expected_citations": [],
+      "expected_answer": "Cannot be answered - GFPA-001 is referenced (GFPA-201 Section 1: 'facilities classified under the GFPA Facility Classification Scheme, see GFPA-001') but is not included in this demonstration corpus.",
+      "notes": "GFPA-001 is mentioned only in GFPA-201 Section 1."
+    },
+    {
+      "id": "Q16",
+      "category": "referenced_but_missing",
+      "question": "What does GFPA-999 say about the compounding effect of multiple Tier 3 findings?",
+      "expected_refusal": "referenced_but_missing",
+      "expected_citations": [],
+      "expected_answer": "Cannot be answered - GFPA-999 is referenced (GFPA-215 Section 2.3, as companion guidance on compounding Tier 3 findings) but is not included in this demonstration corpus.",
+      "notes": "GFPA-999 is mentioned only in GFPA-215 Section 2.3."
+    },
+    {
+      "id": "Q17",
+      "category": "referenced_but_missing",
+      "question": "What resolution and frame rate does GFPA-002 require for surveillance cameras?",
+      "expected_refusal": "referenced_but_missing",
+      "expected_citations": [],
+      "expected_answer": "Cannot be answered - GFPA-002 is referenced (GFPA-201 Section 3.4, for the definition of continuous recording sufficient for after-the-fact identification) but is not included in this demonstration corpus.",
+      "notes": "GFPA-002 is mentioned only in GFPA-201 Section 3.4."
+    },
+    {
+      "id": "Q18",
+      "category": "out_of_corpus",
+      "question": "What is the capital of France?",
+      "expected_refusal": "low_similarity",
+      "expected_citations": [],
+      "expected_answer": "Cannot be answered - entirely unrelated to the GFPA standards corpus.",
+      "notes": "Canonical low_similarity regression check from the retrieval sanity checks; best-match similarity was ~0.49-0.51 across every retrieval-fix iteration, well below the 0.55 threshold."
+    },
+    {
+      "id": "Q19",
+      "category": "out_of_corpus",
+      "question": "What's the best programming language for web development?",
+      "expected_refusal": "low_similarity",
+      "expected_citations": [],
+      "expected_answer": "Cannot be answered - entirely unrelated to the GFPA standards corpus.",
+      "notes": "Second out-of-corpus example, different topic from Q18 to avoid the refusal check resting on a single anecdote."
+    },
+    {
+      "id": "Q20",
+      "category": "out_of_corpus_hard_negative",
+      "question": "What fire suppression system design standards must a facility comply with, such as sprinkler coverage or extinguisher placement density?",
+      "expected_refusal": "model_declined",
+      "expected_citations": [],
+      "expected_answer": "Cannot be answered - the corpus never specifies a fire suppression design standard. GFPA-240 Section 3.1 lists 'fire suppression and detection systems (extinguishers, alarms, sprinklers)' as something a scheduled inspection must ASSESS, but states no coverage percentage, placement density, agent type, or any other design requirement for it anywhere in the corpus (verified: 'fire' appears exactly twice, both in GFPA-240, neither a requirement).",
+      "notes": "HARD NEGATIVE, replacing the original chocolate-cake question per explicit instruction to test threshold calibration against realistic near-misses, not just obviously-unrelated topics. MEASURED BEFORE FINALIZING (retrieval needs no API key): best-match similarity is 0.712 (GFPA-240 Section 3.1) - well ABOVE the 0.55 low_similarity threshold, because 'fire suppression' is a literal keyword match to that checklist bullet. This means SIMILARITY-THRESHOLD refusal cannot catch this case at all; expected_refusal is set to model_declined because the ONLY mechanism that could correctly refuse here is the generation-time system prompt's grounding discipline ('never state a requirement not explicitly present in the excerpts'), not retrieval. A background-check/vetting alternative was measured too (0.716 vs GFPA-210 Section 4.1) and shows the identical pattern, confirming this isn't specific to the fire suppression phrasing - realistic in-domain near-misses generally clear this threshold. If the harness run comes back low_similarity or an answered response instead of model_declined, that is itself the finding: the threshold (or the system prompt) needs recalibration, not the test."
+    }
+  ]
+}

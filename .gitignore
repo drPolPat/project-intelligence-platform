@@ -1,0 +1,24 @@
+__pycache__/
+*.pyc
+.venv/
+venv/
+.env
+*.egg-info/
+
+# Generated synthetic data is reproducible from the seeded scripts in
+# data_generation/ — regenerate locally rather than committing large/changing
+# CSVs. Keep this directory tracked via .gitkeep so the path always exists.
+data/synthetic/*.csv
+!data/synthetic/.gitkeep
+
+# Local vector store / DB files (added in later phases)
+*.sqlite3
+chroma_db/
+
+# Trained model artifacts are reproducible from ml/train_final_model.py
+# against the (also-gitignored) synthetic CSVs - regenerate locally.
+ml/model_artifacts/
+
+# Local diagnostic output from agent/*.py runs.
+agent/draft_risk_report_run.json
+agent/eval_tool_selection_run.json
