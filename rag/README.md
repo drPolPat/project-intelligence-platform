@@ -31,6 +31,18 @@ own vocabulary (Class A, Class B, Class C) — or whenever the query's
 dominant topic pulled toward a different document entirely (e.g. inspection
 frequency, `GFPA-240`).
 
+**What didn't work first:** the initial attempt appended a plain list of
+facility-type synonyms (museum, mall, office tower, utility substation) to
+the chunk's `embedding_text` — plausible-sounding keyword stuffing, but
+measured directly rather than assumed to work: it *dropped* similarity
+against a representative museum-coverage query from 0.655 to 0.616, still
+outside the top-5. A bare list of nouns doesn't resemble the semantic shape
+of a question, so `bge-small` didn't score it as more relevant — it diluted
+the chunk's existing signal instead. The fix that actually worked was
+qualitatively different, not just a bigger list: prepending a short,
+question-mimicking sentence with real definitional content (not just
+keywords) lifted the same query's similarity to 0.75+.
+
 An embedding-level fix (`EMBEDDING_ENRICHMENT` in
 [`chunk_documents.py`](chunk_documents.py) — prepending a query-phrased
 bridge sentence to that chunk's `embedding_text`) helped but didn't

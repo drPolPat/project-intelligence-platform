@@ -1,0 +1,20 @@
+# Isolated from the top-level requirements.txt on purpose: fastmcp's MCP SDK
+# dependency requires a newer starlette than fastapi==0.115.6 (the deployed
+# API's pin) tolerates. Installing fastmcp into the same environment as the
+# API breaks FastAPI app construction outright (confirmed directly: FastAPI()
+# raises TypeError on Router.__init__ once fastmcp pulls starlette to 1.6.0).
+# This server runs in its own venv (mcp_server/.venv) for that reason.
+fastmcp
+python-dotenv==1.2.3
+
+# Same versions as the top-level requirements.txt — agent/tools.py's
+# module-level imports (and predict_risk_score's joblib.load) need these
+# regardless of which of its tools this server exposes.
+anthropic==1.5.0
+chromadb==1.5.9
+fastembed==0.4.2
+joblib==1.6.0
+numpy==2.1.3
+pandas==2.2.3
+scikit-learn==1.5.2
+scipy==1.14.1
