@@ -23,6 +23,7 @@ work, not built here.
 """
 import json
 import os
+import sys
 from pathlib import Path
 
 import anthropic
@@ -169,6 +170,14 @@ def main():
 
     RUN_OUTPUT_PATH.write_text(json.dumps(all_results, indent=2, ensure_ascii=False), encoding="utf-8")
     print(f"Saved full run output (every tool call, in order, with inputs and results) to {RUN_OUTPUT_PATH}")
+
+    # Gate for CI (.github/workflows/ci.yml): this eval has run at 9/9 since
+    # T9 was added; a regression below that baseline should fail the build,
+    # not just get printed and ignored. Manual local runs get the same
+    # signal via exit code, which this script never surfaced before.
+    if n_correct < len(TEST_CASES):
+        print(f"FAIL: tool-selection accuracy {n_correct}/{len(TEST_CASES)} is below the {len(TEST_CASES)}/{len(TEST_CASES)} baseline.")
+        sys.exit(1)
 
 
 if __name__ == "__main__":

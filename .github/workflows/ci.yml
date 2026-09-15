@@ -1,0 +1,63 @@
+name: CI
+
+# Repo's default branch is `master`, not `main` — confirmed via
+# `git remote show origin` before writing this.
+on:
+  push:
+    branches: [master]
+  pull_request:
+    branches: [master]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"  # matches the local venv and api/Dockerfile
+          cache: "pip"
+          cache-dependency-path: requirements.txt
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      # Same sequence as README.md's local setup instructions — fast, seeded,
+      # deterministic scripts, so regenerating on every push is cheap and
+      # keeps CI independent of any committed data/artifacts.
+      - name: Regenerate synthetic data
+        run: |
+          python data_generation/generate_risk_assessments.py
+          python data_generation/generate_inspection_reports.py
+          python data_generation/generate_incident_reports.py
+
+      - name: Train the risk model
+        run: python ml/train_final_model.py
+
+      # Not in the original scope list, but required before either eval can
+      # run: rag/eval/run_eval.py and agent/eval_tool_selection.py's
+      # query_standards cases both read from this index, and it's gitignored
+      # (rebuilt locally, same as the CSVs and model artifact) — see
+      # rag/README.md and api/Dockerfile for the same requirement there.
+      - name: Build the RAG vector index
+        run: python rag/build_index.py
+
+      # 20-question reference set (rag/eval/reference_questions.json).
+      # Gated on the 2 deterministic axes (retrieval recall, refusal
+      # correctness) — see the sys.exit(1) added to run_eval.py's main().
+      # LLM-judged faithfulness is reported but not gated: it's a live
+      # generation call, not the 20/20 baseline this project has actually
+      # verified reproducibly.
+      - name: Run RAG eval harness
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: python rag/eval/run_eval.py
+
+      # T1-T9 (agent/eval_tool_selection.py). Gated on 9/9 — see the
+      # sys.exit(1) added to that script's main().
+      - name: Run agent tool-selection eval
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: python agent/eval_tool_selection.py

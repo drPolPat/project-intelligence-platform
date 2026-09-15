@@ -230,6 +230,18 @@ def main():
 
     summarize(rows)
 
+    # Gate for CI (.github/workflows/ci.yml) on the two DETERMINISTIC axes
+    # only (retrieval recall, refusal correctness) — not LLM-judged
+    # faithfulness, which is a live generation call and not the "20/20"
+    # baseline this project has actually verified reproducibly. A
+    # regression on either deterministic axis should fail the build.
+    n = len(rows)
+    n_deterministic_pass = sum(r.refusal_correct and r.retrieval_recall == 1.0 for r in rows)
+    if n_deterministic_pass < n:
+        print(f"FAIL: {n_deterministic_pass}/{n} questions passed both deterministic checks "
+              f"(refusal correctness + full retrieval recall) — below the {n}/{n} baseline.")
+        sys.exit(1)
+
 
 if __name__ == "__main__":
     main()
