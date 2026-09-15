@@ -164,7 +164,25 @@ def main():
         print()
 
         n_correct += tools_correct
-        all_results.append({"id": case["id"], "label": case["label"], "request": case["request"], "result": result})
+        # Only the fields this script (or a reader of its saved JSON) ever
+        # actually uses — not the full run_agent() result. result["messages"]
+        # in particular holds raw Anthropic SDK content-block objects
+        # (see agent_loop.py's run_agent: `"content": response.content`),
+        # which are not JSON-serializable; api/main.py never runs into this
+        # because it only ever extracts final_text/tool_calls for its HTTP
+        # response, but this eval was passing the whole dict through to
+        # json.dumps() and crashing before it could ever write output or
+        # report a real pass/fail count.
+        all_results.append({
+            "id": case["id"],
+            "label": case["label"],
+            "request": case["request"],
+            "result": {
+                "final_text": result["final_text"],
+                "tool_calls": result["tool_calls"],
+                "stop_reason": result["stop_reason"],
+            },
+        })
 
     print(f"Tool-selection accuracy: {n_correct}/{len(TEST_CASES)}")
 
