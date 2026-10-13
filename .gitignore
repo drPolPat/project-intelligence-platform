@@ -22,3 +22,8 @@ ml/model_artifacts/
 # Local diagnostic output from agent/*.py runs.
 agent/draft_risk_report_run.json
 agent/eval_tool_selection_run.json
+
+# Optional local MLflow tracking store (ml/robustness_check.py).
+mlruns/
+mlartifacts/
+mlflow.db

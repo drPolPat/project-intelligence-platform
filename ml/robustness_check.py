@@ -9,7 +9,17 @@ reimplemented) across a range of GroupShuffleSplit random states — not
 searched or cherry-picked for Critical-tier presence, just 0..N-1 in order —
 to see whether the RF > Ridge pattern on Critical recall holds up, or was a
 lucky single draw.
+
+Optional MLflow tracking: if `mlflow` is importable, the run is also logged
+(params, one nested run per split, summary metrics) to MLflow's default
+local store (./mlflow.db + ./mlruns/ with MLflow 3.x), or to
+MLFLOW_TRACKING_URI if set. View with `mlflow ui` from the repo root. mlflow is deliberately not in requirements.txt —
+without it the script runs exactly as before. Set NO_MLFLOW=1 to skip logging
+even when it is installed.
 """
+import math
+import os
+
 import numpy as np
 import pandas as pd
 from sklearn.model_selection import GroupShuffleSplit
@@ -21,6 +31,52 @@ pd.set_option("display.max_columns", None)
 
 N_SPLITS = 10
 RANDOM_STATES = list(range(N_SPLITS))  # not filtered for Critical-tier presence, by design
+TEST_SIZE = 0.2
+MLFLOW_EXPERIMENT = "pip-risk-model-robustness"
+
+
+def log_to_mlflow(results: pd.DataFrame) -> None:
+    """Log the robustness check to MLflow if it is installed; otherwise no-op."""
+    if os.environ.get("NO_MLFLOW"):
+        return
+    try:
+        import mlflow
+    except ImportError:
+        print("\n(mlflow not installed - skipping experiment tracking)")
+        return
+
+    def finite(metrics: dict) -> dict:
+        return {k: float(v) for k, v in metrics.items() if not math.isnan(float(v))}
+
+    mlflow.set_experiment(MLFLOW_EXPERIMENT)
+    with mlflow.start_run(run_name=f"robustness_{N_SPLITS}_splits") as parent:
+        mlflow.log_params({
+            "n_splits": N_SPLITS,
+            "random_states": ",".join(map(str, RANDOM_STATES)),
+            "split": "GroupShuffleSplit by facility_id",
+            "test_size": TEST_SIZE,
+            "ridge": "RidgeCV(alphas=logspace(-3,3,13), cv=GroupKFold(5))",
+            "rf_n_estimators": 300,
+            "rf_max_depth": 6,
+            "rf_min_samples_leaf": 3,
+            "rf_random_state": 42,
+        })
+        for rs, row in results.iterrows():
+            with mlflow.start_run(run_name=f"split_rs{rs}", nested=True):
+                mlflow.log_param("random_state", rs)
+                mlflow.log_metrics(finite(row.to_dict()))
+
+        summary = {}
+        for col in ["rmse_ridge", "rmse_rf", "mae_ridge", "mae_rf"]:
+            summary[f"{col}_mean"] = results[col].mean()
+            summary[f"{col}_std"] = results[col].std()
+        evaluable = results[results["n_crit_test"] > 0]
+        for col in ["critical_recall_ridge", "critical_recall_rf"]:
+            summary[f"{col}_mean"] = evaluable[col].mean()
+        summary["n_evaluable_splits"] = len(evaluable)
+        mlflow.log_metrics(finite(summary))
+        mlflow.log_text(results.to_csv(), "per_split_results.csv")
+        print(f"\nLogged to MLflow experiment '{MLFLOW_EXPERIMENT}', run {parent.info.run_id}")
 
 
 def main():
@@ -28,7 +84,7 @@ def main():
 
     records = []
     for rs in RANDOM_STATES:
-        gss = GroupShuffleSplit(n_splits=1, test_size=0.2, random_state=rs)
+        gss = GroupShuffleSplit(n_splits=1, test_size=TEST_SIZE, random_state=rs)
         train_idx, test_idx = next(gss.split(groups, groups=groups))
         metrics, _ = evaluate_split(X_ridge, X_rf, y, groups, risk_level, train_idx, test_idx)
         metrics["random_state"] = rs
@@ -79,6 +135,8 @@ def main():
         else:
             print("-> The random_state=0 result does NOT generalize: Ridge matches or beats RF on "
                   "Critical recall as often or more often across other splits.")
+
+    log_to_mlflow(results)
 
 
 if __name__ == "__main__":
